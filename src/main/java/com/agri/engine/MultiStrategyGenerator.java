@@ -1,4 +1,4 @@
-package engine;
+package com.agri.engine;
 
 import com.agri.model.AnalysisResult;
 import com.agri.model.CropData;
@@ -117,7 +117,7 @@ public class MultiStrategyGenerator {
                               String rationale) {
 
         double capitalDeployed  = totalBudget * fraction;
-        double capitalReserved  = totalBudget - capitalDeployed;
+        double capitalReserved = Math.max(0, totalBudget - capitalDeployed);
 
         // Estimated tonnes purchasable / producable given deployed capital
         // (marketPricePerTon is the selling price, used as a proxy for production value)
@@ -131,7 +131,8 @@ public class MultiStrategyGenerator {
                 + "Est. Volume: %.2f tonnes | "
                 + "Projected Net Return: RM %.2f | "
                 + "Adjusted Risk Score: %d/10 | "
-                + "%s",
+                + "Rationale: %s",
+
                 level,
                 crop,
                 capitalDeployed, fraction * 100,
@@ -150,7 +151,7 @@ public class MultiStrategyGenerator {
      */
     private double findMarketPrice(String cropName, List<CropData> marketData) {
         for (CropData crop : marketData) {
-            if (crop.getName().equalsIgnoreCase(cropName)) {
+            if (crop.getName() != null && cropName != null && crop.getName().equalsIgnoreCase(cropName)) {
                 return crop.getMarketPrice();
             }
         }

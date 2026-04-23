@@ -1,4 +1,4 @@
-package engine;
+package com.agri.engine;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -124,7 +124,15 @@ public class GlmClient {
         }
 
         log("INFO", "GLM call successful (HTTP " + statusCode + ").");
-        return content.asText().trim();
+        String text = content.asText().trim();
+
+        if (text.startsWith("```")) {
+            text = text.replaceAll("```json", "")
+                    .replaceAll("```", "")
+                    .trim();
+        }
+
+        return text;
     }
 
     private void log(String level, String msg) {
