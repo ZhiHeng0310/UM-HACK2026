@@ -1,3 +1,5 @@
+package com.agri.model;
+
 public class FarmerProfile {
     private String location;
     private double landSize;      // in Hectares or Acres

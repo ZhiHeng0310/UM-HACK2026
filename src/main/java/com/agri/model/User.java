@@ -1,3 +1,5 @@
+package com.agri.model;
+
 import java.util.List;
 
 public class User {

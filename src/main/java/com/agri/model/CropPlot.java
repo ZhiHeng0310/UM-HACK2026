@@ -1,3 +1,5 @@
+package com.agri.model;
+
 import java.time.LocalDate;
 
 public class CropPlot {

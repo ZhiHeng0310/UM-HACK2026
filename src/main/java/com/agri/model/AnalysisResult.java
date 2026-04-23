@@ -1,3 +1,5 @@
+package com.agri.model;
+
 import java.util.Map;
 import java.util.HashMap;
 
@@ -26,6 +28,17 @@ public class AnalysisResult {
         this.riskScore = riskScore;
         this.economicImpact = economicImpact;
         this.strategyBreakdown = strategyBreakdown;
+    }
+
+    public AnalysisResult(String recommendedCrop, String reasoning, int riskScore, double economicImpact) {
+        this.recommendedCrop = recommendedCrop;
+        this.reasoning = reasoning;
+        this.riskScore = riskScore;
+        this.economicImpact = economicImpact;
+
+        // initialize defaults for fields not provided yet
+        this.recommendedStrategy = "Balanced"; // or null
+        this.strategyBreakdown = new HashMap<>();
     }
 
     // 4. Getters and Setters

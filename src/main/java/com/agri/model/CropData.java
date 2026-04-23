@@ -1,3 +1,4 @@
+package com.agri.model;
 public class CropData {
     private String name;
     private double expectedYield;  // tons per hectare
