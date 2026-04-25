@@ -7,7 +7,7 @@ import com.agri.config.AppConfig;
 import com.agri.config.GeminiApiKeyResolver;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
-
+import com.agri.ledger.*;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -70,10 +70,11 @@ import java.util.Map;
 @Service
 public class DecisionService {
 
-    private final PromptBuilder          promptBuilder;
-    private final GlmClient              glmClient;
-    private final ZaiRationaleGenerator  rationaleGenerator;
+    private final PromptBuilder promptBuilder;
+    private final GlmClient glmClient;
+    private final ZaiRationaleGenerator rationaleGenerator;
     private final MultiStrategyGenerator strategyGenerator;
+    private final DecisionLogger decisionLogger; 
 
     /**
      * Constructs a DecisionService wired with all engine components.
@@ -103,7 +104,8 @@ public class DecisionService {
                 : "NOT SET"));
         this.glmClient          = new GlmClient(apiKey);
         this.rationaleGenerator = new ZaiRationaleGenerator();
-        this.strategyGenerator  = new MultiStrategyGenerator();
+        this.strategyGenerator = new MultiStrategyGenerator();
+        this.decisionLogger = decisionLogger; // Correctly initialize the injected logger
     }
     
 
@@ -118,19 +120,22 @@ public class DecisionService {
      */
     // Inside DecisionService.java
 public AnalysisResult analyze(FarmerProfile profile, List<CropData> marketData, String weatherContext) throws IOException {
-    // 1. Build prompt
+    System.out.println("[DecisionService] Step 1: Building Prompt...");
     String prompt = promptBuilder.build(profile, marketData, weatherContext);
     
-    // 2. Call GLM
-    String rawResponse = glmClient.call(prompt);
+    System.out.println("[DecisionService] Step 2: Calling GLM API (This might take a while)...");
+    String rawResponse = glmClient.call(prompt); // <--- IF STUCK, IT STOPS HERE
     
-    // 3. Parse and generate strategies
+    System.out.println("[DecisionService] Step 3: Parsing Response...");
     AnalysisResult result = rationaleGenerator.parse(rawResponse);
+    
+    System.out.println("[DecisionService] Step 4: Generating Strategies...");
     Map<String, String> strategies = strategyGenerator.generate(result, profile, marketData);
     
-    // 4. Attach strategies so plot data is available
     result.setStrategyBreakdown(strategies);
-    
+    // NEW: Auto-log every recommendation to the JSON ledger
+    String recId = decisionLogger.log(profile.getFarmerName(), result);
+    result.setRecommendationId(recId);
     return result;
 }
 

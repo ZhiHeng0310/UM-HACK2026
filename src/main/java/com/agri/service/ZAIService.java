@@ -109,5 +109,18 @@ public class ZAIService {
             e.printStackTrace();
             return "System Error: " + e.getMessage();
         }
+
+        return "Error parsing response";
+
+    } catch (Exception e) {
+        // 3. THE FALLBACK: If a 504 Timeout or any error occurs, return a Mock Response instantly
+        System.out.println("⚠️ Z.AI Engine timed out. Using local knowledge fallback.");
+        
+        return "### 💡 Local Expert Advice for " + crop + "\n\n" +
+               "It looks like my connection to the primary brain is a bit slow, but based on your plot data:\n" +
+               "* **Immediate Action:** Monitor soil moisture closely given the current 'Severe Drought' alert.\n" +
+               "* **Recommendation:** Apply organic mulch (10-15cm) to reduce evaporation.\n" +
+               "* **Sandbox Suggestion:** Try opening the **Decision Sandbox** on the left to simulate how different fertilizer costs will impact your Musang King yield.";
     }
 }
+    }

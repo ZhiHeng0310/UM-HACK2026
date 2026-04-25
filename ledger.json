@@ -46,4 +46,120 @@
   "actualProfit" : 0.0,
   "outcomeTimestamp" : null,
   "outcomeLogged" : false
+}, {
+  "recommendationId" : "4e13556c-4682-4f23-a8c7-04878517a6b3",
+  "timestamp" : "2026-04-25T21:01:05.6986667",
+  "farmerName" : "Tan Winny",
+  "recommendedCrop" : "Musang King",
+  "recommendedStrategy" : "Ignored",
+  "projectedEconomicImpact" : 0.0,
+  "riskScore" : 0,
+  "reasoning" : "### \uD83D\uDCA1 Local Expert Advice for Musang King\n\nIt looks like my connection to the primary brain is a bit slow, but based on your plot data:\n* **Immediate Action:** Monitor soil moisture closely given the current 'Severe Drought' alert.\n* **Recommendation:** Apply organic mulch (10-15cm) to reduce evaporation.\n* **Sandbox Suggestion:** Try opening the **Decision Sandbox** on the left to simulate how different fertilizer costs will impact your Musang King yield.",
+  "strategyBreakdown" : { },
+  "chosenPlan" : null,
+  "choiceTimestamp" : null,
+  "actualOutcome" : null,
+  "actualProfit" : 0.0,
+  "outcomeTimestamp" : null,
+  "outcomeLogged" : false
+}, {
+  "recommendationId" : "df0471db-1137-4f53-a049-0e2d06d2b8c3",
+  "timestamp" : "2026-04-25T21:23:05.0862591",
+  "farmerName" : null,
+  "recommendedCrop" : "Musang King (Simulated)",
+  "recommendedStrategy" : "Balanced",
+  "projectedEconomicImpact" : 8200.0,
+  "riskScore" : 6,
+  "reasoning" : "Simulation active with 30000ms connect safety. Under current modifiers, Musang King requires a 20% increase in irrigation budget.",
+  "strategyBreakdown" : {
+    "Conservative" : "[Conservative STRATEGY] Crop: Musang King (Simulated) | Budget Deployed: RM 2500.00 (50%) | Projected Net Return: RM 4100.00 | Adjusted Risk Score: 4/10 | Rationale: Low-risk posture. Half the budget is deployed; remaining capital is held in reserve as a safety buffer. Best for risk-averse farmers or first-time investors.",
+    "Balanced" : "[Balanced STRATEGY] Crop: Musang King (Simulated) | Budget Deployed: RM 3750.00 (75%) | Projected Net Return: RM 6150.00 | Adjusted Risk Score: 6/10 | Rationale: Moderate-risk posture. 75% of budget is deployed. Balances growth opportunity against downside risk. Aligns with the AI's core recommendation.",
+    "Aggressive" : "[Aggressive STRATEGY] Crop: Musang King (Simulated) | Budget Deployed: RM 5000.00 (100%) | Projected Net Return: RM 8200.00 | Adjusted Risk Score: 8/10 | Rationale: High-risk posture. Full budget is deployed to maximise return. Suitable only for farmers with adequate cash reserves and high risk tolerance."
+  },
+  "chosenPlan" : null,
+  "choiceTimestamp" : null,
+  "actualOutcome" : null,
+  "actualProfit" : 0.0,
+  "outcomeTimestamp" : null,
+  "outcomeLogged" : false
+}, {
+  "recommendationId" : "ea2100d9-b002-4386-9ee6-c51f185623f2",
+  "timestamp" : "2026-04-25T21:31:39.731079",
+  "farmerName" : null,
+  "recommendedCrop" : "Musang King (Simulated)",
+  "recommendedStrategy" : "Balanced",
+  "projectedEconomicImpact" : 8200.0,
+  "riskScore" : 6,
+  "reasoning" : "Simulation active with 30000ms connect safety. Under current modifiers, Musang King requires a 20% increase in irrigation budget.",
+  "strategyBreakdown" : {
+    "Conservative" : "[Conservative STRATEGY] Crop: Musang King (Simulated) | Budget Deployed: RM 2500.00 (50%) | Projected Net Return: RM 4100.00 | Adjusted Risk Score: 4/10 | Rationale: Low-risk posture. Half the budget is deployed; remaining capital is held in reserve as a safety buffer. Best for risk-averse farmers or first-time investors.",
+    "Balanced" : "[Balanced STRATEGY] Crop: Musang King (Simulated) | Budget Deployed: RM 3750.00 (75%) | Projected Net Return: RM 6150.00 | Adjusted Risk Score: 6/10 | Rationale: Moderate-risk posture. 75% of budget is deployed. Balances growth opportunity against downside risk. Aligns with the AI's core recommendation.",
+    "Aggressive" : "[Aggressive STRATEGY] Crop: Musang King (Simulated) | Budget Deployed: RM 5000.00 (100%) | Projected Net Return: RM 8200.00 | Adjusted Risk Score: 8/10 | Rationale: High-risk posture. Full budget is deployed to maximise return. Suitable only for farmers with adequate cash reserves and high risk tolerance."
+  },
+  "chosenPlan" : null,
+  "choiceTimestamp" : null,
+  "actualOutcome" : null,
+  "actualProfit" : 0.0,
+  "outcomeTimestamp" : null,
+  "outcomeLogged" : false
+}, {
+  "recommendationId" : "e558303d-57dd-4d75-9d45-f3a6345ede27",
+  "timestamp" : "2026-04-25T21:37:30.6099873",
+  "farmerName" : null,
+  "recommendedCrop" : "Musang King (Simulated)",
+  "recommendedStrategy" : "Balanced",
+  "projectedEconomicImpact" : 8200.0,
+  "riskScore" : 6,
+  "reasoning" : "Simulation active with 30000ms connect safety. Under current modifiers, Musang King requires a 20% increase in irrigation budget.",
+  "strategyBreakdown" : {
+    "Conservative" : "[Conservative STRATEGY] Crop: Musang King (Simulated) | Budget Deployed: RM 2500.00 (50%) | Projected Net Return: RM 4100.00 | Adjusted Risk Score: 4/10 | Rationale: Low-risk posture. Half the budget is deployed; remaining capital is held in reserve as a safety buffer. Best for risk-averse farmers or first-time investors.",
+    "Balanced" : "[Balanced STRATEGY] Crop: Musang King (Simulated) | Budget Deployed: RM 3750.00 (75%) | Projected Net Return: RM 6150.00 | Adjusted Risk Score: 6/10 | Rationale: Moderate-risk posture. 75% of budget is deployed. Balances growth opportunity against downside risk. Aligns with the AI's core recommendation.",
+    "Aggressive" : "[Aggressive STRATEGY] Crop: Musang King (Simulated) | Budget Deployed: RM 5000.00 (100%) | Projected Net Return: RM 8200.00 | Adjusted Risk Score: 8/10 | Rationale: High-risk posture. Full budget is deployed to maximise return. Suitable only for farmers with adequate cash reserves and high risk tolerance."
+  },
+  "chosenPlan" : null,
+  "choiceTimestamp" : null,
+  "actualOutcome" : null,
+  "actualProfit" : 0.0,
+  "outcomeTimestamp" : null,
+  "outcomeLogged" : false
+}, {
+  "recommendationId" : "7e87fd48-f276-4e37-bd80-fbb110986854",
+  "timestamp" : "2026-04-25T21:44:26.459089",
+  "farmerName" : null,
+  "recommendedCrop" : "Musang King (Simulated)",
+  "recommendedStrategy" : "Balanced",
+  "projectedEconomicImpact" : 8200.0,
+  "riskScore" : 6,
+  "reasoning" : "Simulation active with 30000ms connect safety. Under current modifiers, Musang King requires a 20% increase in irrigation budget.",
+  "strategyBreakdown" : {
+    "Conservative" : "[Conservative STRATEGY] Crop: Musang King (Simulated) | Budget Deployed: RM 2500.00 (50%) | Projected Net Return: RM 4100.00 | Adjusted Risk Score: 4/10 | Rationale: Low-risk posture. Half the budget is deployed; remaining capital is held in reserve as a safety buffer. Best for risk-averse farmers or first-time investors.",
+    "Balanced" : "[Balanced STRATEGY] Crop: Musang King (Simulated) | Budget Deployed: RM 3750.00 (75%) | Projected Net Return: RM 6150.00 | Adjusted Risk Score: 6/10 | Rationale: Moderate-risk posture. 75% of budget is deployed. Balances growth opportunity against downside risk. Aligns with the AI's core recommendation.",
+    "Aggressive" : "[Aggressive STRATEGY] Crop: Musang King (Simulated) | Budget Deployed: RM 5000.00 (100%) | Projected Net Return: RM 8200.00 | Adjusted Risk Score: 8/10 | Rationale: High-risk posture. Full budget is deployed to maximise return. Suitable only for farmers with adequate cash reserves and high risk tolerance."
+  },
+  "chosenPlan" : null,
+  "choiceTimestamp" : null,
+  "actualOutcome" : null,
+  "actualProfit" : 0.0,
+  "outcomeTimestamp" : null,
+  "outcomeLogged" : false
+}, {
+  "recommendationId" : "593483c5-3e39-4232-bc46-5b642ed8f5a0",
+  "timestamp" : "2026-04-25T21:44:58.2669149",
+  "farmerName" : null,
+  "recommendedCrop" : "Musang King (Simulated)",
+  "recommendedStrategy" : "Balanced",
+  "projectedEconomicImpact" : 8200.0,
+  "riskScore" : 6,
+  "reasoning" : "Simulation active with 30000ms connect safety. Under current modifiers, Musang King requires a 20% increase in irrigation budget.",
+  "strategyBreakdown" : {
+    "Conservative" : "[Conservative STRATEGY] Crop: Musang King (Simulated) | Budget Deployed: RM 2500.00 (50%) | Projected Net Return: RM 4100.00 | Adjusted Risk Score: 4/10 | Rationale: Low-risk posture. Half the budget is deployed; remaining capital is held in reserve as a safety buffer. Best for risk-averse farmers or first-time investors.",
+    "Balanced" : "[Balanced STRATEGY] Crop: Musang King (Simulated) | Budget Deployed: RM 3750.00 (75%) | Projected Net Return: RM 6150.00 | Adjusted Risk Score: 6/10 | Rationale: Moderate-risk posture. 75% of budget is deployed. Balances growth opportunity against downside risk. Aligns with the AI's core recommendation.",
+    "Aggressive" : "[Aggressive STRATEGY] Crop: Musang King (Simulated) | Budget Deployed: RM 5000.00 (100%) | Projected Net Return: RM 8200.00 | Adjusted Risk Score: 8/10 | Rationale: High-risk posture. Full budget is deployed to maximise return. Suitable only for farmers with adequate cash reserves and high risk tolerance."
+  },
+  "chosenPlan" : null,
+  "choiceTimestamp" : null,
+  "actualOutcome" : null,
+  "actualProfit" : 0.0,
+  "outcomeTimestamp" : null,
+  "outcomeLogged" : false
 } ]
