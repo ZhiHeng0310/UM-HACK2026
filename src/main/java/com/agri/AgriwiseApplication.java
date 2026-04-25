@@ -1,12 +1,21 @@
 package com.agri;
-
+import com.agri.model.*;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.agri.engine.*;
+import com.agri.model.AnalysisResult;
 import com.agri.model.CropData;
+import com.agri.model.FarmerProfile;
+import com.agri.model.SimulationRequest;
+import com.agri.sandbox.ScenarioSolver;
+import com.agri.sandbox.SimulationController;
+import com.agri.sandbox.SimulationRunner;
 import com.agri.service.ZAIService;
-
+import org.springframework.context.event.EventListener;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import java.nio.charset.StandardCharsets;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +31,7 @@ public class AgriwiseApplication {
 
     private static final String CSV_FILE_PATH = "crop_database.csv";
 
+    
     public static void main(String[] args) {
         SpringApplication.run(AgriwiseApplication.class, args);
         System.out.println("🚀 AGRI-ANALYST BACKEND IS RUNNING!");
@@ -123,5 +133,45 @@ private String getPlotDataSummary() {
         return "Error reading dataset.";
     }
     return content.toString();
+}
+@Autowired
+private ScenarioSolver scenarioSolver; // You'll need to create this service class
+
+// Inside AgriwiseApplication class...
+
+@Autowired
+private SimulationController simulationController;
+
+@Autowired
+private DecisionService decisionService; // Assuming you have this service
+
+/**
+ * This method runs once the application starts. 
+ * Use this for testing the console simulation logic.
+ */
+@EventListener(ApplicationReadyEvent.class)
+public void runSimulationTest() {
+    FarmerProfile profile = new FarmerProfile(); 
+    List<CropData> market = new ArrayList<>();
+
+    try {
+        // This is where the red line was
+        AnalysisResult baseline = decisionService.analyze(profile, market, "Sunny");
+        simulationController.setOriginalResult(baseline);
+        System.out.println("✅ Baseline loaded successfully.");
+    } catch (IOException e) {
+        System.err.println("❌ Failed to load simulation baseline: " + e.getMessage());
+    }
+}
+
+@PostMapping("/simulate")
+public ResponseEntity<AnalysisResult> runSimulation(@RequestBody SimulationRequest request) {
+    try {
+        // This calls the logic we built
+        AnalysisResult result = simulationController.handleSimulationRequest(request);
+        return ResponseEntity.ok(result);
+    } catch (IOException e) {
+        return ResponseEntity.internalServerError().build();
+    }
 }
 }

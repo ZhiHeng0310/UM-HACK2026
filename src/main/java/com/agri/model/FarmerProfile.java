@@ -7,6 +7,8 @@ public class FarmerProfile {
     private String riskTolerance;
     private List<CropPlot> myPlots;
 
+    public FarmerProfile(){}
+
     public FarmerProfile(String farmerName, String riskTolerance) {
         this.farmerName = farmerName;
         this.riskTolerance = riskTolerance;
