@@ -3,9 +3,11 @@ package com.agri.engine;
 import com.agri.model.AnalysisResult;
 import com.agri.model.CropData;
 import com.agri.model.FarmerProfile;
+import com.agri.config.AppConfig;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import jakarta.annotation.PostConstruct;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -21,7 +23,7 @@ import java.util.Map;
  *
  * Pipeline (as specified in UM_HACK.md Part 4):
  *   Step 1 – PromptBuilder       : profile + market + weather → prompt string
- *   Step 2 – GlmClient           : prompt → raw AI content string (JSON)
+ *   Step 2 – GlmClient           : prompt → raw Gemini content string (JSON)
  *   Step 3 – ZaiRationaleGenerator : raw content → AnalysisResult (4 core fields)
  *   Step 4 – MultiStrategyGenerator : AnalysisResult → strategyBreakdown map
  *   Step 5 – Assemble final AnalysisResult with strategies and return.
@@ -58,7 +60,7 @@ import java.util.Map;
  *
  * Usage example (from a controller or test):
  *
- *   String apiKey = AppConfig.getGlmApiKey();      // Part 8
+ *   String apiKey = AppConfig.getGlmApiKey();      // Retrieve from .env GEMINI_API_KEY
  *   DecisionService service = new DecisionService(apiKey);
  *
  *   List<CropData>  market  = new MarketDataClient().fetchCurrentMarketPrices();
@@ -77,11 +79,33 @@ public class DecisionService {
     /**
      * Constructs a DecisionService wired with all engine components.
      *
-     * @param glmApiKey Your Z.AI API key. Retrieve from AppConfig – never hardcode.
+     * @param glmApiKey Your Gemini API key. Retrieve from AppConfig – never hardcode.
      */
-    public DecisionService(@Value("${zai.api.key:mock_key_for_hackathon}")String glmApiKey) {
+    public DecisionService(@Value("${GEMINI_API_KEY:}") String glmApiKey) {
         this.promptBuilder      = new PromptBuilder();
-        this.glmClient          = new GlmClient(glmApiKey);
+        
+        // Try to load API key from multiple sources
+        String apiKey = glmApiKey;
+        if (apiKey == null || apiKey.trim().isEmpty()) {
+            // Try System property
+            apiKey = System.getProperty("GEMINI_API_KEY");
+        }
+        if (apiKey == null || apiKey.trim().isEmpty()) {
+            // Try environment variable
+            apiKey = System.getenv("GEMINI_API_KEY");
+        }
+        if (apiKey == null || apiKey.trim().isEmpty()) {
+            // Try AppConfig
+            try {
+                apiKey = AppConfig.getGlmApiKey();
+            } catch (Exception e) {
+                apiKey = "mock_key_for_hackathon";
+                System.err.println("[WARN] Could not load API key: " + e.getMessage());
+            }
+        }
+        
+        System.out.println("[INFO] DecisionService initialized with API key: " + (apiKey != null && apiKey.length() > 0 ? apiKey.substring(0, Math.min(10, apiKey.length())) + "..." : "NOT SET"));
+        this.glmClient          = new GlmClient(apiKey);
         this.rationaleGenerator = new ZaiRationaleGenerator();
         this.strategyGenerator  = new MultiStrategyGenerator();
     }

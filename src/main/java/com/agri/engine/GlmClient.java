@@ -17,45 +17,53 @@ import java.nio.charset.StandardCharsets;
 /**
  * Part 4 - Decision Core
  *
- * GlmClient manages a single HTTP POST to Z.AI's GLM-4 chat-completions endpoint.
+ * GlmClient manages a single HTTP POST to Google Gemini API endpoint.
  * It is intentionally minimal: its only job is to send a prompt and return
- * the raw content string from the GLM's first response choice.
+ * the raw content string from the Gemini's first response choice.
  *
- * All JSON building / parsing of the outer GLM envelope is done here with Jackson.
+ * All JSON building / parsing of the outer Gemini envelope is done here with Jackson.
  * Parsing the *content* (the agri recommendation) is delegated to ZaiRationaleGenerator.
  *
  * Dependencies: Jackson Databind (already referenced in Part 8 / AppConfig).
  */
 public class GlmClient {
 
-    // Low temperature → more deterministic JSON output from the GLM
-    
+    // Low temperature → more deterministic JSON output from Gemini
     
 
-    // ── Z.AI GLM endpoint & model ────────────────────────────────────────────────
-  private static final String API_URL = "https://api.ilmu.ai/anthropic";
-    private static final String MODEL   = "ilmu-glm-5.1";
+    // ── Google Gemini API endpoint & model ────────────────────────────────────────────────
+    private static final String API_URL_TEMPLATE = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent";
+    private static final String MODEL   = "gemma-3-27b-it";
 
-    // Low temperature → more deterministic JSON output from the GLM
+    // Low temperature → more deterministic JSON output from Gemini
     private static final double TEMPERATURE     = 0.3;
     // ── Increase the patience for high-quality responses ──────────────────────────
-private static final int CONNECT_TIMEOUT = 30_000;  // 30 seconds to connect
-private static final int READ_TIMEOUT    = 180_000; // 180 seconds (3 minutes) to wait for the full reply
+    private static final int CONNECT_TIMEOUT = 30_000;  // 30 seconds to connect
+    private static final int READ_TIMEOUT    = 180_000; // 180 seconds (3 minutes) to wait for the full reply
     private static final int    MAX_TOKENS      = 1024; // <-- Add this constant
 
     private final String       apiKey;
     private final ObjectMapper mapper;
 
     /**
-     * @param apiKey Your Z.AI API key. Retrieve this from AppConfig – never hardcode it.
+     * @param apiKey Your Google Gemini API key. Retrieve this from AppConfig – never hardcode it.
      */
     public GlmClient(String apiKey) {
         this.apiKey  = apiKey;
         this.mapper  = new ObjectMapper();
+        
+        // Validate API key at initialization
+        if (apiKey == null || apiKey.trim().isEmpty()) {
+            System.err.println("[ERROR] GlmClient initialized with empty API key!");
+        } else if (apiKey.equals("mock_key_for_hackathon")) {
+            System.err.println("[WARN] GlmClient using mock API key - real API calls will fail!");
+        } else {
+            System.out.println("[INFO] GlmClient initialized with API key: " + apiKey.substring(0, Math.min(10, apiKey.length())) + "...");
+        }
     }
 
     /**
-     * Sends {@code prompt} to the GLM and returns the plain-text content of
+     * Sends {@code prompt} to Gemini and returns the plain-text content of
      * the first choice in the API response.
      *
      * @param prompt The full prompt string produced by PromptBuilder.
@@ -63,27 +71,41 @@ private static final int READ_TIMEOUT    = 180_000; // 180 seconds (3 minutes) t
      * @throws IOException If the network call fails or the API returns an error status.
      */
     public String call(String prompt) throws IOException {
+        // Validate API key before making request
+        if (apiKey == null || apiKey.trim().isEmpty() || apiKey.equals("mock_key_for_hackathon")) {
+            throw new IOException("[GlmClient] Cannot call Gemini API: API key is not set or is invalid. Please set GEMINI_API_KEY environment variable.");
+        }
 
-        // ── 1. Build the request JSON body ────────────────────────────────────────
+        // ── 1. Build the request JSON body for Gemini API ────────────────────────────────────────
         ObjectNode requestBody = mapper.createObjectNode();
-        requestBody.put("model", MODEL);
-        requestBody.put("temperature", TEMPERATURE);
-        requestBody.put("max_tokens", MAX_TOKENS);
+        
+        // Gemini uses "contents" instead of "messages"
+        ArrayNode contents = mapper.createArrayNode();
+        ObjectNode contentObj = mapper.createObjectNode();
+        contentObj.put("role", "user");
+        
+        ArrayNode parts = mapper.createArrayNode();
+        ObjectNode part = mapper.createObjectNode();
+        part.put("text", prompt);
+        parts.add(part);
+        
+        contentObj.set("parts", parts);
+        contents.add(contentObj);
+        requestBody.set("contents", contents);
 
-        ArrayNode messages   = mapper.createArrayNode();
-        ObjectNode userMsg   = mapper.createObjectNode();
-        userMsg.put("role",    "user");
-        userMsg.put("content", prompt);
-        messages.add(userMsg);
-        requestBody.set("messages", messages);
+        // Add generation config
+        ObjectNode generationConfig = mapper.createObjectNode();
+        generationConfig.put("temperature", TEMPERATURE);
+        generationConfig.put("maxOutputTokens", MAX_TOKENS);
+        requestBody.set("generationConfig", generationConfig);
 
         String jsonBody = mapper.writeValueAsString(requestBody);
 
         // ── 2. Open HTTP connection ───────────────────────────────────────────────
-        HttpURLConnection conn = (HttpURLConnection) new URL(API_URL).openConnection();
+        String apiUrl = String.format(API_URL_TEMPLATE, MODEL) + "?key=" + apiKey;
+        HttpURLConnection conn = (HttpURLConnection) new URL(apiUrl).openConnection();
         conn.setRequestMethod("POST");
         conn.setRequestProperty("Content-Type",  "application/json");
-        conn.setRequestProperty("Authorization", "Bearer " + apiKey);
         conn.setDoOutput(true);
         conn.setConnectTimeout(CONNECT_TIMEOUT);
         conn.setReadTimeout(READ_TIMEOUT);
@@ -111,26 +133,32 @@ private static final int READ_TIMEOUT    = 180_000; // 180 seconds (3 minutes) t
         // ── 5. Handle non-2xx ─────────────────────────────────────────────────────
         if (statusCode < 200 || statusCode >= 300) {
             throw new IOException(
-                "[GlmClient] GLM API returned HTTP " + statusCode + ": " + rawResponse
+                "[GlmClient] Gemini API returned HTTP " + statusCode + ": " + rawResponse
             );
         }
 
-        // ── 6. Extract content from GLM envelope ──────────────────────────────────
-        // GLM response shape: { "choices": [ { "message": { "content": "..." } } ] }
+        // ── 6. Extract content from Gemini envelope ──────────────────────────────
+        // Gemini response shape: { "candidates": [ { "content": { "parts": [ { "text": "..." } ] } } ] }
         JsonNode root    = mapper.readTree(rawResponse.toString());
-        JsonNode choices = root.path("choices");
+        JsonNode candidates = root.path("candidates");
 
-        if (!choices.isArray() || choices.size() == 0) {
-            throw new IOException("[GlmClient] No choices returned in GLM response: " + rawResponse);
+        if (!candidates.isArray() || candidates.size() == 0) {
+            throw new IOException("[GlmClient] No candidates returned in Gemini response: " + rawResponse);
         }
 
-        JsonNode content = choices.get(0).path("message").path("content");
+        JsonNode responseParts = candidates.get(0).path("content").path("parts");
+
+        if (!responseParts.isArray() || responseParts.size() == 0) {
+            throw new IOException("[GlmClient] 'parts' array missing in Gemini response: " + rawResponse);
+        }
+
+        JsonNode content = responseParts.get(0).path("text");
 
         if (content.isMissingNode() || content.isNull()) {
-            throw new IOException("[GlmClient] 'content' field missing in GLM response: " + rawResponse);
+            throw new IOException("[GlmClient] 'text' field missing in Gemini response: " + rawResponse);
         }
 
-        log("INFO", "GLM call successful (HTTP " + statusCode + ").");
+        log("INFO", "Gemini call successful (HTTP " + statusCode + ").");
         String text = content.asText().trim();
 
         if (text.startsWith("```")) {

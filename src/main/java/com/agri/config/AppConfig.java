@@ -9,10 +9,10 @@ public class AppConfig {
             .load();
 
     public static String getGlmApiKey() {
-        String key = dotenv.get("API_KEY");
+        String key = dotenv.get("GEMINI_API_KEY");
 
         if (key == null || key.isEmpty()) {
-            throw new RuntimeException("GLM_API_KEY not found in .env");
+            throw new RuntimeException("GEMINI_API_KEY not found in .env");
         }
 
         return key;
