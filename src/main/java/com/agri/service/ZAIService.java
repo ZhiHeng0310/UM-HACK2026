@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import jakarta.annotation.PostConstruct;
+import com.agri.config.GeminiApiKeyResolver;
 
 import java.util.*;
 
@@ -26,27 +27,16 @@ public class ZAIService {
 
     @PostConstruct
     public void initializeApiKey() {
-        // Try to load API key from multiple sources
-        if (API_KEY == null || API_KEY.trim().isEmpty()) {
-            // Try System property first
-            API_KEY = System.getProperty("GEMINI_API_KEY");
-            if (API_KEY != null && !API_KEY.isEmpty()) {
-                System.out.println("[INFO] Loaded GEMINI_API_KEY from System properties");
-                return;
-            }
+        API_KEY = GeminiApiKeyResolver.resolve(API_KEY);
 
-            // Try environment variable
-            API_KEY = System.getenv("GEMINI_API_KEY");
-            if (API_KEY != null && !API_KEY.isEmpty()) {
-                System.out.println("[INFO] Loaded GEMINI_API_KEY from environment variables");
-                return;
-            }
-
-            System.err.println("[ERROR] GEMINI_API_KEY not found in any source (Spring @Value, System properties, or environment variables)");
+        if (GeminiApiKeyResolver.isUsable(API_KEY)) {
+            System.setProperty("GEMINI_API_KEY", API_KEY);
+            System.out.println("[INFO] Gemini key ready for ZAIService: " + API_KEY.substring(0, Math.min(10, API_KEY.length())) + "...");
         } else {
-            System.out.println("[INFO] GEMINI_API_KEY loaded from Spring @Value: " + API_KEY.substring(0, Math.min(10, API_KEY.length())) + "...");
+            System.err.println("[ERROR] No valid Gemini key found for ZAIService. Set GEMINI_API_KEY, GOOGLE_API_KEY, or API_KEY.");
         }
     }
+
 
     public String getAIResponse(String userMsg, String crop, String marketData, String newsData) {
         String prompt = "You are an agricultural expert specializing in crop management and optimization.\n\n"
@@ -81,6 +71,9 @@ public class ZAIService {
             requestBody.set("generationConfig", generationConfig);
 
             // Build URL with API key
+            if (!GeminiApiKeyResolver.isUsable(API_KEY)) {
+                return "Configuration Error: Gemini API key is missing or invalid. Set GEMINI_API_KEY (or GOOGLE_API_KEY/API_KEY).";
+            }
             String apiUrl = String.format(API_URL_TEMPLATE, MODEL) + "?key=" + API_KEY;
 
             HttpHeaders headers = new HttpHeaders();

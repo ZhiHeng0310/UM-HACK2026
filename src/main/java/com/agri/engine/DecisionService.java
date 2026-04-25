@@ -4,10 +4,9 @@ import com.agri.model.AnalysisResult;
 import com.agri.model.CropData;
 import com.agri.model.FarmerProfile;
 import com.agri.config.AppConfig;
+import com.agri.config.GeminiApiKeyResolver;
 import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import jakarta.annotation.PostConstruct;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -84,27 +83,24 @@ public class DecisionService {
     public DecisionService(@Value("${GEMINI_API_KEY:}") String glmApiKey) {
         this.promptBuilder      = new PromptBuilder();
         
-        // Try to load API key from multiple sources
-        String apiKey = glmApiKey;
-        if (apiKey == null || apiKey.trim().isEmpty()) {
-            // Try System property
-            apiKey = System.getProperty("GEMINI_API_KEY");
-        }
-        if (apiKey == null || apiKey.trim().isEmpty()) {
-            // Try environment variable
-            apiKey = System.getenv("GEMINI_API_KEY");
-        }
-        if (apiKey == null || apiKey.trim().isEmpty()) {
-            // Try AppConfig
+        String apiKey = GeminiApiKeyResolver.resolve(glmApiKey);
+        if (!GeminiApiKeyResolver.isUsable(apiKey)) {
             try {
-                apiKey = AppConfig.getGlmApiKey();
+                apiKey = GeminiApiKeyResolver.resolve(AppConfig.getGlmApiKey());
             } catch (Exception e) {
-                apiKey = "mock_key_for_hackathon";
-                System.err.println("[WARN] Could not load API key: " + e.getMessage());
+                apiKey = "";
+                System.err.println("[WARN] Could not load API key from AppConfig: " + e.getMessage());
             }
         }
         
-        System.out.println("[INFO] DecisionService initialized with API key: " + (apiKey != null && apiKey.length() > 0 ? apiKey.substring(0, Math.min(10, apiKey.length())) + "..." : "NOT SET"));
+        if (GeminiApiKeyResolver.isUsable(apiKey)) {
+            System.setProperty("GEMINI_API_KEY", apiKey);
+        }
+
+        System.out.println("[INFO] DecisionService initialized with API key: "
+                + (GeminiApiKeyResolver.isUsable(apiKey)
+                ? apiKey.substring(0, Math.min(10, apiKey.length())) + "..."
+                : "NOT SET"));
         this.glmClient          = new GlmClient(apiKey);
         this.rationaleGenerator = new ZaiRationaleGenerator();
         this.strategyGenerator  = new MultiStrategyGenerator();

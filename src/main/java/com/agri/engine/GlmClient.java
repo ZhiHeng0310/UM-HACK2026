@@ -13,6 +13,7 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import com.agri.config.GeminiApiKeyResolver;
 
 /**
  * Part 4 - Decision Core
@@ -49,16 +50,14 @@ public class GlmClient {
      * @param apiKey Your Google Gemini API key. Retrieve this from AppConfig – never hardcode it.
      */
     public GlmClient(String apiKey) {
-        this.apiKey  = apiKey;
+        this.apiKey  = GeminiApiKeyResolver.sanitize(apiKey);
         this.mapper  = new ObjectMapper();
         
         // Validate API key at initialization
-        if (apiKey == null || apiKey.trim().isEmpty()) {
-            System.err.println("[ERROR] GlmClient initialized with empty API key!");
-        } else if (apiKey.equals("mock_key_for_hackathon")) {
-            System.err.println("[WARN] GlmClient using mock API key - real API calls will fail!");
-        } else {
-            System.out.println("[INFO] GlmClient initialized with API key: " + apiKey.substring(0, Math.min(10, apiKey.length())) + "...");
+        if (!GeminiApiKeyResolver.isUsable(this.apiKey)) {
+            System.err.println("[ERROR] GlmClient initialized without a valid Gemini API key.");
+        }else {
+            System.out.println("[INFO] GlmClient initialized with API key: " + this.apiKey.substring(0, Math.min(10, this.apiKey.length())) + "...");
         }
     }
 
@@ -72,10 +71,10 @@ public class GlmClient {
      */
     public String call(String prompt) throws IOException {
         // Validate API key before making request
-        if (apiKey == null || apiKey.trim().isEmpty() || apiKey.equals("mock_key_for_hackathon")) {
-            throw new IOException("[GlmClient] Cannot call Gemini API: API key is not set or is invalid. Please set GEMINI_API_KEY environment variable.");
+        if (!GeminiApiKeyResolver.isUsable(apiKey)) {
+            throw new IOException("[GlmClient] Cannot call Gemini API: API key is not set or is invalid. Please set GEMINI_API_KEY (or GOOGLE_API_KEY/API_KEY) in environment or .env.");
         }
-
+        
         // ── 1. Build the request JSON body for Gemini API ────────────────────────────────────────
         ObjectNode requestBody = mapper.createObjectNode();
         

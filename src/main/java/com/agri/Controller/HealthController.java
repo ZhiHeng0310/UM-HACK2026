@@ -1,7 +1,9 @@
 package com.agri.Controller;
 
+import com.agri.config.GeminiApiKeyResolver;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -16,13 +18,8 @@ public class HealthController {
     @GetMapping("/health")
     public ResponseEntity<Map<String, Object>> healthCheck() {
         Map<String, Object> response = new HashMap<>();
-        
-        String apiKey = System.getProperty("GEMINI_API_KEY");
-        if (apiKey == null || apiKey.isEmpty()) {
-            apiKey = System.getenv("GEMINI_API_KEY");
-        }
-        
-        boolean isApiKeyLoaded = apiKey != null && !apiKey.isEmpty() && !apiKey.equals("mock_key_for_hackathon");
+            String apiKey = GeminiApiKeyResolver.resolve("");
+        boolean isApiKeyLoaded = GeminiApiKeyResolver.isUsable(apiKey);
         
         response.put("status", "ok");
         response.put("service", "Agriwise Backend");
@@ -33,7 +30,7 @@ public class HealthController {
             response.put("message", "✅ Gemini API is properly configured and ready");
             response.put("apiKeyPreview", apiKey.substring(0, Math.min(10, apiKey.length())) + "...");
         } else {
-            response.put("message", "❌ ERROR: GEMINI_API_KEY is not set or is using mock value");
+            response.put("message", "❌ ERROR: No valid Gemini key found. Set GEMINI_API_KEY, GOOGLE_API_KEY, or API_KEY.");
             response.put("apiKeyStatus", "NOT CONFIGURED");
         }
         
@@ -47,23 +44,28 @@ public class HealthController {
     public ResponseEntity<Map<String, Object>> getStatus() {
         Map<String, Object> response = new HashMap<>();
         
-        // Check various API key sources
-        String fromProperty = System.getProperty("GEMINI_API_KEY");
-        String fromEnv = System.getenv("GEMINI_API_KEY");
+        String fromGeminiProperty = GeminiApiKeyResolver.sanitize(System.getProperty("GEMINI_API_KEY"));
+        String fromGoogleProperty = GeminiApiKeyResolver.sanitize(System.getProperty("GOOGLE_API_KEY"));
+        String fromLegacyProperty = GeminiApiKeyResolver.sanitize(System.getProperty("API_KEY"));
+
+        String fromGeminiEnv = GeminiApiKeyResolver.sanitize(System.getenv("GEMINI_API_KEY"));
+        String fromGoogleEnv = GeminiApiKeyResolver.sanitize(System.getenv("GOOGLE_API_KEY"));
+        String fromLegacyEnv = GeminiApiKeyResolver.sanitize(System.getenv("API_KEY"));
+
+        String resolved = GeminiApiKeyResolver.resolve("");
         
         response.put("timestamp", System.currentTimeMillis());
         response.put("javaVersion", System.getProperty("java.version"));
         response.put("userDir", System.getProperty("user.dir"));
-        response.put("geminiApiKeyFromProperty", fromProperty != null && !fromProperty.isEmpty() ? "SET" : "NOT SET");
-        response.put("geminiApiKeyFromEnvironment", fromEnv != null && !fromEnv.isEmpty() ? "SET" : "NOT SET");
-        
-        if (fromProperty != null && !fromProperty.isEmpty()) {
-            response.put("activeApiKeySource", "System Property");
-        } else if (fromEnv != null && !fromEnv.isEmpty()) {
-            response.put("activeApiKeySource", "Environment Variable");
-        } else {
-            response.put("activeApiKeySource", "NOT CONFIGURED");
-        }
+                response.put("geminiApiKeyFromProperty", GeminiApiKeyResolver.isUsable(fromGeminiProperty) ? "SET" : "NOT SET");
+        response.put("googleApiKeyFromProperty", GeminiApiKeyResolver.isUsable(fromGoogleProperty) ? "SET" : "NOT SET");
+        response.put("apiKeyFromProperty", GeminiApiKeyResolver.isUsable(fromLegacyProperty) ? "SET" : "NOT SET");
+
+        response.put("geminiApiKeyFromEnvironment", GeminiApiKeyResolver.isUsable(fromGeminiEnv) ? "SET" : "NOT SET");
+        response.put("googleApiKeyFromEnvironment", GeminiApiKeyResolver.isUsable(fromGoogleEnv) ? "SET" : "NOT SET");
+        response.put("apiKeyFromEnvironment", GeminiApiKeyResolver.isUsable(fromLegacyEnv) ? "SET" : "NOT SET");
+
+        response.put("resolvedGeminiKey", GeminiApiKeyResolver.isUsable(resolved) ? "SET" : "NOT SET");
         
         return ResponseEntity.ok(response);
     }
