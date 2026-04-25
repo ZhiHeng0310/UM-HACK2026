@@ -134,6 +134,9 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.agri.engine.*;
+import com.agri.ledger.DecisionLogger;
+import com.agri.ledger.LedgerEntry;
+import com.agri.ledger.UserActionTracker;
 import com.agri.sandbox.ScenarioSolver;
 import com.agri.sandbox.SimulationController;
 import com.agri.sandbox.SimulationRunner;
@@ -335,5 +338,25 @@ public ResponseEntity<AnalysisResult> handleWebSimulation(@RequestBody Simulatio
     } catch (IOException e) {
         return ResponseEntity.internalServerError().build();
     }
+}
+
+// Inside AgriwiseApplication.java
+
+@Autowired private DecisionLogger decisionLogger;
+@Autowired private UserActionTracker actionTracker;
+
+@PostMapping("/api/ledger/save")
+public ResponseEntity<String> recordFarmerChoice(@RequestBody Map<String, String> payload) {
+    // Stage 2: Link the choice to the recommendation ID
+    String recId = payload.get("recommendationId");
+    String choice = payload.get("chosenStrategy"); // Conservative, Balanced, or Aggressive
+    
+    boolean success = actionTracker.recordChoice(recId, choice);
+    return success ? ResponseEntity.ok("Choice Logged") : ResponseEntity.badRequest().build();
+}
+
+@GetMapping("/api/ledger/all")
+public List<LedgerEntry> getAllEntries() throws IOException {
+    return decisionLogger.loadAll(); //
 }
 }

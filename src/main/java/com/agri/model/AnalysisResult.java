@@ -14,6 +14,8 @@ public class AnalysisResult {
     private double economicImpact;
     private Map<String, String> strategyBreakdown;
 
+    
+private String recommendationId;
     public AnalysisResult() {
         this.strategyBreakdown = new HashMap<>();
     }
@@ -62,6 +64,14 @@ public Map<String, Double> getPlotData() {
     public void setStrategyBreakdown(Map<String, String> strategyBreakdown) { this.strategyBreakdown = strategyBreakdown; }
     public String getRecommendedStrategy() { return recommendedStrategy; }
     public void setRecommendedStrategy(String recommendedStrategy) { 
-     this.recommendedStrategy = recommendedStrategy; 
-}}
+        this.recommendedStrategy = recommendedStrategy;}
+
+    public void setRecommendationId(String id) { 
+        this.recommendationId = id; 
+    }
+
+    public String getRecommendationId() { 
+        return recommendationId; 
+    }
+}
 

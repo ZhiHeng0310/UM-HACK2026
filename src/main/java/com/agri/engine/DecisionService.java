@@ -6,84 +6,29 @@ import com.agri.model.FarmerProfile;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-
+import com.agri.ledger.*;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-/**
- * Part 4 - Decision Core
- *
- * DecisionService is the single public entry point for the entire engine package.
- * It owns and wires together all four engine components and exposes one method:
- *
- *   {@link #analyze(FarmerProfile, List, String)}
- *
- * Pipeline (as specified in UM_HACK.md Part 4):
- *   Step 1 – PromptBuilder       : profile + market + weather → prompt string
- *   Step 2 – GlmClient           : prompt → raw AI content string (JSON)
- *   Step 3 – ZaiRationaleGenerator : raw content → AnalysisResult (4 core fields)
- *   Step 4 – MultiStrategyGenerator : AnalysisResult → strategyBreakdown map
- *   Step 5 – Assemble final AnalysisResult with strategies and return.
- *
- * ── IMPORTANT: Required patch to AnalysisResult (zip1) before this compiles ──────────
- *
- *   The AnalysisResult model (zip1) declares:
- *       private Map<String, String> strategyBreakdown;
- *   but does NOT expose a setter or getter for it.
- *
- *   Add these two methods to AnalysisResult.java before integrating Part 4:
- *
- *       public void setStrategyBreakdown(Map<String, String> strategyBreakdown) {
- *           this.strategyBreakdown = strategyBreakdown;
- *       }
- *
- *       public Map<String, String> getStrategyBreakdown() {
- *           return strategyBreakdown;
- *       }
- *
- * ── IMPORTANT: Required patch to CropData (zip1) before MarketDataClient compiles ────
- *
- *   MarketDataClient (zip2) calls: new CropData(name, price, yield, water)
- *   But CropData only has a no-arg constructor. Add:
- *
- *       public CropData(String name, double marketPrice, double expectedYield, double waterReq) {
- *           this.name          = name;
- *           this.marketPrice   = marketPrice;
- *           this.expectedYield = expectedYield;
- *           this.waterReq      = waterReq;
- *       }
- *
- * ──────────────────────────────────────────────────────────Adjusted Risk Score──────────────────────────
- *
- * Usage example (from a controller or test):
- *
- *   String apiKey = AppConfig.getGlmApiKey();      // Part 8
- *   DecisionService service = new DecisionService(apiKey);
- *
- *   List<CropData>  market  = new MarketDataClient().fetchCurrentMarketPrices();
- *   String          weather = new WeatherNewsClient().fetchUnstructuredContext(profile.getLocation());
- *
- *   AnalysisResult result = service.analyze(profile, market, weather);
- */
+
 @Service
 public class DecisionService {
 
-    private final PromptBuilder          promptBuilder;
-    private final GlmClient              glmClient;
-    private final ZaiRationaleGenerator  rationaleGenerator;
+    private final PromptBuilder promptBuilder;
+    private final GlmClient glmClient;
+    private final ZaiRationaleGenerator rationaleGenerator;
     private final MultiStrategyGenerator strategyGenerator;
+    private final DecisionLogger decisionLogger; 
 
-    /**
-     * Constructs a DecisionService wired with all engine components.
-     *
-     * @param glmApiKey Your Z.AI API key. Retrieve from AppConfig – never hardcode.
-     */
-    public DecisionService(@Value("${zai.api.key:mock_key_for_hackathon}")String glmApiKey) {
-        this.promptBuilder      = new PromptBuilder();
-        this.glmClient          = new GlmClient(glmApiKey);
+    @Autowired
+    public DecisionService(@Value("${ZAI_API_KEY}") String glmApiKey, 
+                           DecisionLogger decisionLogger) { 
+        this.promptBuilder = new PromptBuilder();
+        this.glmClient = new GlmClient(glmApiKey);
         this.rationaleGenerator = new ZaiRationaleGenerator();
-        this.strategyGenerator  = new MultiStrategyGenerator();
+        this.strategyGenerator = new MultiStrategyGenerator();
+        this.decisionLogger = decisionLogger; // Correctly initialize the injected logger
     }
     
 
@@ -111,6 +56,9 @@ public AnalysisResult analyze(FarmerProfile profile, List<CropData> marketData, 
     Map<String, String> strategies = strategyGenerator.generate(result, profile, marketData);
     
     result.setStrategyBreakdown(strategies);
+    // NEW: Auto-log every recommendation to the JSON ledger
+    String recId = decisionLogger.log(profile.getFarmerName(), result);
+    result.setRecommendationId(recId);
     return result;
 }
 

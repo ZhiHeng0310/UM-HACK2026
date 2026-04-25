@@ -17,7 +17,7 @@ import java.nio.charset.StandardCharsets;
 public class GlmClient {
 
     // ── Z.AI GLM endpoint & model ────────────────────────────────────────────────
-  private static final String API_URL = "https://api.ilmu.ai/anthropic";
+  private static final String API_URL = "https://api.ilmu.ai/anthropic/v1/messages";
     private static final String MODEL   = "ilmu-glm-5.1";
 
     private static final double TEMPERATURE     = 0.3;

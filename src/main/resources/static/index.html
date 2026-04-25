@@ -397,6 +397,7 @@
         if (el) el.remove();
     }
 
+    let currentRecommendationId = null;
     async function sendMessage(presetMsg = null) {
         const input = document.getElementById('chatInput');
         const msg = presetMsg || input.value.trim();
@@ -427,6 +428,9 @@
             hideLoading();
             appendAIResponse("⚠️ Error connecting to Z.AI Engine. Please ensure your backend is running.");
         }
+        const data = await res.json();
+    currentRecommendationId = data.recommendationId; // Capture the UUID from the backend
+    appendAIResponse(data.reply);
     }
 
     function appendUserMessage(msg) {
@@ -538,7 +542,7 @@ async function runSandboxSimulation() {
                 const date = new Date(entry.timestamp).toLocaleDateString();
                 const chosen = entry.chosenPlan ? 
                     `<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-md text-xs font-bold">${entry.chosenPlan}</span>` : 
-                    `<span class="bg-amber-100 text-amber-700 px-2 py-1 rounded-md text-xs font-bold">Pending</span>`;
+                    `<span class="bg-amber-100 text-amber-700 px-2 py-1 rounded-md text-xs font-bold">Ignored</span>`;
 
                 return `
                     <tr class="hover:bg-slate-50 transition-colors">
@@ -571,32 +575,29 @@ async function runSandboxSimulation() {
     }
 
     // --- UPDATED: THIS NOW SENDS THE SAVED STEP 1 TEXT TO STEP 3 ---
-    async function logDecision(status) {
-        const payload = {
-            plotId: window.currentCrop || "General Plot",
-            chosenStrategy: status,
-            recommendationText: lastAiRecommendation, // The captured prompt from Step 1
-            timestamp: new Date().toISOString()
-        };
-        try {
-            const res = await fetch('/api/ledger/save', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            if (res.ok) {
-                document.getElementById('decision-actions').remove();
-                appendAIResponse(`Decision recorded: **${status}**. Added to history.`);
-                const toast = document.getElementById('toast');
-                document.getElementById('toast-msg').innerText = `Saved ${status} status to Ledger!`;
-                toast.classList.remove('opacity-0', '-translate-y-10');
-                setTimeout(() => toast.classList.add('opacity-0', '-translate-y-10'), 3000);
-            }
-        } catch (e) { 
-            console.error("Ledger save failed."); 
-            alert("Connection error: Could not save decision.");
+    async function logDecision(planType) {
+    if (!currentRecommendationId) return;
+
+    const payload = {
+        recommendationId: currentRecommendationId,
+        chosenStrategy: planType // "Conservative", "Balanced", or "Aggressive"
+    };
+
+    try {
+        const res = await fetch('/api/ledger/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        
+        if (res.ok) {
+            document.getElementById('decision-actions').remove();
+            appendAIResponse(`✅ Decision **${planType}** has been permanently logged to your ledger.`);
         }
+    } catch (err) {
+        console.error("Ledger Sync Failed");
     }
+}
 
     async function showDecisionHistory() {
         appendUserMessage("Show my Decision History");
