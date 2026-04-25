@@ -127,27 +127,16 @@
 // }
 
 package com.agri;
-import com.agri.model.*;
+
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.agri.engine.*;
-import com.agri.ledger.DecisionLogger;
-import com.agri.ledger.LedgerEntry;
-import com.agri.ledger.UserActionTracker;
-import com.agri.sandbox.ScenarioSolver;
-import com.agri.sandbox.SimulationController;
-import com.agri.sandbox.SimulationRunner;
 import com.agri.service.ZAIService;
-import org.springframework.context.event.EventListener;
-import java.nio.charset.StandardCharsets;
-import java.time.LocalDate;
-
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 @SpringBootApplication
@@ -156,9 +145,6 @@ import java.util.*;
 @CrossOrigin(origins = "*") // 🔥 CRITICAL FIX: Allows your frontend to send data here
 public class AgriwiseApplication {
 
-    private static final String CSV_FILE_PATH = "crop_database.csv";
-
-    
     public static void main(String[] args) {
         SpringApplication.run(AgriwiseApplication.class, args);
         System.out.println("🚀 AGRI-ANALYST BACKEND IS RUNNING!");
@@ -278,85 +264,5 @@ public class AgriwiseApplication {
             return "Error reading dataset.";
         }
         return content.toString();
-}
-
-@Autowired
-private ScenarioSolver scenarioSolver; // You'll need to create this service class
-
-// Inside AgriwiseApplication class...
-
-@Autowired
-private SimulationController simulationController;
-
-@Autowired
-private DecisionService decisionService; // Assuming you have this service
-
-/**
- * This method runs once the application starts. 
- * Use this for testing the console simulation logic.
- */
-
-
-@EventListener(ApplicationReadyEvent.class)
-public void runSimulationTest() {
-    FarmerProfile profile = new FarmerProfile(); 
-    
-    // Use CropPlot instead of Plot
-    // Note: It requires PlotId, CropName, Address, LandSize, Date, Budget, Lat, Long
-    CropPlot dummyPlot = new CropPlot(
-        "P-001", 
-        "Corn", 
-        "Universiti Malaya, KL", 
-        5.0, 
-        LocalDate.now(), 
-        5000.0, 
-        3.12, 
-        101.65
-    );
-
-    profile.getMyPlots().add(dummyPlot);
-
-    List<CropData> market = new ArrayList<>();
-    String weather = "Sunny";
-
-    try {
-        AnalysisResult baseline = decisionService.analyze(profile, market, weather);
-        simulationController.setSessionData(profile, market, weather);
-        simulationController.setOriginalResult(baseline);
-        System.out.println("✅ Sandbox Baseline initialized with CropPlot.");
-    } catch (IOException e) {
-        System.err.println("❌ Baseline failed: " + e.getMessage());
     }
-}
-
-@PostMapping("/simulate")
-public ResponseEntity<AnalysisResult> handleWebSimulation(@RequestBody SimulationRequest request) {
-    try {
-        // This triggers your "Comparative View" in the console and returns data to the web
-        AnalysisResult hypothetical = simulationController.handleSimulationRequest(request);
-        return ResponseEntity.ok(hypothetical);
-    } catch (IOException e) {
-        return ResponseEntity.internalServerError().build();
-    }
-}
-
-// Inside AgriwiseApplication.java
-
-@Autowired private DecisionLogger decisionLogger;
-@Autowired private UserActionTracker actionTracker;
-
-@PostMapping("/api/ledger/save")
-public ResponseEntity<String> recordFarmerChoice(@RequestBody Map<String, String> payload) {
-    // Stage 2: Link the choice to the recommendation ID
-    String recId = payload.get("recommendationId");
-    String choice = payload.get("chosenStrategy"); // Conservative, Balanced, or Aggressive
-    
-    boolean success = actionTracker.recordChoice(recId, choice);
-    return success ? ResponseEntity.ok("Choice Logged") : ResponseEntity.badRequest().build();
-}
-
-@GetMapping("/api/ledger/all")
-public List<LedgerEntry> getAllEntries() throws IOException {
-    return decisionLogger.loadAll(); //
-}
 }
