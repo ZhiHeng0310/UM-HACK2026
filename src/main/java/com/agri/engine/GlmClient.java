@@ -16,14 +16,15 @@ import java.nio.charset.StandardCharsets;
 
 public class GlmClient {
 
-    // ── Z.AI GLM Configuration ────────────────────────────────────────────────
-    private static final String API_URL = "https://api.ilmu.ai/anthropic/v1/messages"; // Updated to standard endpoint
+    // ── Z.AI GLM endpoint & model ────────────────────────────────────────────────
+  private static final String API_URL = "https://api.ilmu.ai/anthropic";
     private static final String MODEL   = "ilmu-glm-5.1";
 
     private static final double TEMPERATURE     = 0.3;
-    private static final int    MAX_TOKENS      = 1024;
-    private static final int    CONNECT_TIMEOUT = 5000;  // 5 seconds
-    private static final int    READ_TIMEOUT    = 15000; // 15 seconds
+    // ── Increase the patience for high-quality responses ──────────────────────────
+private static final int CONNECT_TIMEOUT = 30_000;  // 30 seconds to connect
+private static final int READ_TIMEOUT    = 180_000; // 180 seconds (3 minutes) to wait for the full reply
+    private static final int    MAX_TOKENS      = 1024; // <-- Add this constant
 
     private final String       apiKey;
     private final ObjectMapper mapper;
