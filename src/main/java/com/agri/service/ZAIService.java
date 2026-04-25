@@ -11,15 +11,17 @@ import java.util.*;
 @Service
 public class ZAIService {
 
-    private final String API_URL = "https://api.ilmu.ai/anthropic/v1/messages";
+    private static final String MODEL = "gemma-3-27b-it";
+    private static final String API_URL_TEMPLATE =
+            "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s";
 
-    @Value("${ZAI_API_KEY}")
+    @Value("${GEMINI_API_KEY:${ZAI_API_KEY:}}")
     private String API_KEY;
 
     private final RestTemplate restTemplate = new RestTemplate();
 
     public String getAIResponse(String userMsg, String crop, String marketData, String newsData) {
-        String prompt = "You are Z.AI, an agricultural expert.\n\n"
+        String prompt = "You are an agricultural expert.\n\n"
                 + "User Crop: " + crop + "\n"
                 + "User Question: " + userMsg + "\n\n"
                 + "Market Data:\n" + marketData + "\n\n"
@@ -27,44 +29,38 @@ public class ZAIService {
                 + "Give clear, practical farming advice.";
 
         Map<String, Object> body = new HashMap<>();
-        body.put("model", "ilmu-glm-5.1"); // Ensure this is a valid model name
-        body.put("max_tokens", 1024);      // Anthropic-style APIs often require this
-
-        List<Map<String, String>> messages = new ArrayList<>();
-        Map<String, String> msg = new HashMap<>();
-        msg.put("role", "user");
-        msg.put("content", prompt);
-        messages.add(msg);
-        body.put("messages", messages);
+        Map<String, Object> part = new HashMap<>();
+        part.put("text", prompt);
+        Map<String, Object> content = new HashMap<>();
+        content.put("parts", List.of(part));
+        body.put("contents", List.of(content));
+        body.put("generationConfig", Map.of("maxOutputTokens", 1024, "temperature", 0.3));
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("Authorization", "Bearer " + API_KEY);
 
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
 
         try {
-            ResponseEntity<Map> response = restTemplate.postForEntity(API_URL, request, Map.class);
+            String apiUrl = String.format(API_URL_TEMPLATE, MODEL, API_KEY);
+            ResponseEntity<Map> response = restTemplate.postForEntity(apiUrl, request, Map.class);
             Map<String, Object> responseBody = response.getBody();
 
             if (responseBody == null) return "Error: Empty response body";
 
-            // ANTHROPIC PARSING LOGIC:
-            // The response usually looks like: { "content": [ { "text": "...", "type": "text" } ] }
-            List<Map<String, Object>> contentList = (List<Map<String, Object>>) responseBody.get("content");
-            
-            if (contentList != null && !contentList.isEmpty()) {
-                return contentList.get(0).get("text").toString();
+            List<Map<String, Object>> candidates = (List<Map<String, Object>>) responseBody.get("candidates");
+            if (candidates != null && !candidates.isEmpty()) {
+                Map<String, Object> firstCandidate = candidates.get(0);
+                Map<String, Object> candidateContent = (Map<String, Object>) firstCandidate.get("content");
+                if (candidateContent != null) {
+                    List<Map<String, Object>> parts = (List<Map<String, Object>>) candidateContent.get("parts");
+                    if (parts != null && !parts.isEmpty() && parts.get(0).get("text") != null) {
+                        return parts.get(0).get("text").toString();
+                    }
+                }
             }
 
-            // FALLBACK: If they are using OpenAI-style mapping over an Anthropic URL
-            List<Map<String, Object>> choices = (List<Map<String, Object>>) responseBody.get("choices");
-            if (choices != null && !choices.isEmpty()) {
-                Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
-                return message.get("content").toString();
-            }
-
-            return "Error: Could not parse response. Check API documentation for 'ilmu.ai'.";
+            return "Error: Could not parse Gemini response.";
 
         } catch (HttpClientErrorException e) {
             return "API Error (" + e.getStatusCode() + "): " + e.getResponseBodyAsString();

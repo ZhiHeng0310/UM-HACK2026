@@ -77,9 +77,9 @@ public class DecisionService {
     /**
      * Constructs a DecisionService wired with all engine components.
      *
-     * @param glmApiKey Your Z.AI API key. Retrieve from AppConfig – never hardcode.
+     * @param glmApiKey Your Gemini API key. Retrieve from AppConfig – never hardcode.
      */
-    public DecisionService(@Value("${zai.api.key:mock_key_for_hackathon}")String glmApiKey) {
+    public DecisionService(@Value("${gemini.api.key:${zai.api.key:mock_key_for_hackathon}}")String glmApiKey) {
         this.promptBuilder      = new PromptBuilder();
         this.glmClient          = new GlmClient(glmApiKey);
         this.rationaleGenerator = new ZaiRationaleGenerator();

@@ -17,11 +17,11 @@ import java.nio.charset.StandardCharsets;
 /**
  * Part 4 - Decision Core
  *
- * GlmClient manages a single HTTP POST to Z.AI's GLM-4 chat-completions endpoint.
+ * GlmClient manages a single HTTP POST to Google's Gemini GenerateContent endpoint.
  * It is intentionally minimal: its only job is to send a prompt and return
  * the raw content string from the GLM's first response choice.
  *
- * All JSON building / parsing of the outer GLM envelope is done here with Jackson.
+ * All JSON building / parsing of the outer Gemini envelope is done here with Jackson.
  * Parsing the *content* (the agri recommendation) is delegated to ZaiRationaleGenerator.
  *
  * Dependencies: Jackson Databind (already referenced in Part 8 / AppConfig).
@@ -32,9 +32,10 @@ public class GlmClient {
     
     
 
-    // ── Z.AI GLM endpoint & model ────────────────────────────────────────────────
-  private static final String API_URL = "https://api.ilmu.ai/anthropic";
-    private static final String MODEL   = "ilmu-glm-5.1";
+    // ── Gemini endpoint & model ───────────────────────────────────────────────────
+    private static final String API_URL_TEMPLATE =
+            "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s";
+    private static final String MODEL   = "gemma-3-27b-it";
 
     // Low temperature → more deterministic JSON output from the GLM
     private static final double TEMPERATURE     = 0.3;
@@ -47,7 +48,7 @@ private static final int READ_TIMEOUT    = 180_000; // 180 seconds (3 minutes) t
     private final ObjectMapper mapper;
 
     /**
-     * @param apiKey Your Z.AI API key. Retrieve this from AppConfig – never hardcode it.
+     * @param apiKey Your Gemini API key. Retrieve this from AppConfig – never hardcode it.
      */
     public GlmClient(String apiKey) {
         this.apiKey  = apiKey;
@@ -66,24 +67,28 @@ private static final int READ_TIMEOUT    = 180_000; // 180 seconds (3 minutes) t
 
         // ── 1. Build the request JSON body ────────────────────────────────────────
         ObjectNode requestBody = mapper.createObjectNode();
-        requestBody.put("model", MODEL);
-        requestBody.put("temperature", TEMPERATURE);
-        requestBody.put("max_tokens", MAX_TOKENS);
+        ArrayNode contents = mapper.createArrayNode();
+        ObjectNode content = mapper.createObjectNode();
+        ArrayNode parts = mapper.createArrayNode();
+        ObjectNode textPart = mapper.createObjectNode();
+        textPart.put("text", prompt);
+        parts.add(textPart);
+        content.set("parts", parts);
+        contents.add(content);
+        requestBody.set("contents", contents);
 
-        ArrayNode messages   = mapper.createArrayNode();
-        ObjectNode userMsg   = mapper.createObjectNode();
-        userMsg.put("role",    "user");
-        userMsg.put("content", prompt);
-        messages.add(userMsg);
-        requestBody.set("messages", messages);
+        ObjectNode generationConfig = mapper.createObjectNode();
+        generationConfig.put("temperature", TEMPERATURE);
+        generationConfig.put("maxOutputTokens", MAX_TOKENS);
+        requestBody.set("generationConfig", generationConfig);
 
         String jsonBody = mapper.writeValueAsString(requestBody);
 
         // ── 2. Open HTTP connection ───────────────────────────────────────────────
-        HttpURLConnection conn = (HttpURLConnection) new URL(API_URL).openConnection();
+        String apiUrl = String.format(API_URL_TEMPLATE, MODEL, apiKey);
+        HttpURLConnection conn = (HttpURLConnection) new URL(apiUrl).openConnection();
         conn.setRequestMethod("POST");
         conn.setRequestProperty("Content-Type",  "application/json");
-        conn.setRequestProperty("Authorization", "Bearer " + apiKey);
         conn.setDoOutput(true);
         conn.setConnectTimeout(CONNECT_TIMEOUT);
         conn.setReadTimeout(READ_TIMEOUT);
@@ -110,28 +115,26 @@ private static final int READ_TIMEOUT    = 180_000; // 180 seconds (3 minutes) t
 
         // ── 5. Handle non-2xx ─────────────────────────────────────────────────────
         if (statusCode < 200 || statusCode >= 300) {
-            throw new IOException(
-                "[GlmClient] GLM API returned HTTP " + statusCode + ": " + rawResponse
-            );
+            throw new IOException("[GlmClient] Gemini API returned HTTP " + statusCode + ": " + rawResponse);
         }
 
-        // ── 6. Extract content from GLM envelope ──────────────────────────────────
-        // GLM response shape: { "choices": [ { "message": { "content": "..." } } ] }
+        // ── 6. Extract content from Gemini envelope ───────────────────────────────
+        // Gemini response shape: { "candidates":[{"content":{"parts":[{"text":"..."}]}}] }
         JsonNode root    = mapper.readTree(rawResponse.toString());
-        JsonNode choices = root.path("choices");
+        JsonNode candidates = root.path("candidates");
 
-        if (!choices.isArray() || choices.size() == 0) {
-            throw new IOException("[GlmClient] No choices returned in GLM response: " + rawResponse);
+        if (!candidates.isArray() || candidates.size() == 0) {
+            throw new IOException("[GlmClient] No candidates returned in Gemini response: " + rawResponse);
         }
 
-        JsonNode content = choices.get(0).path("message").path("content");
+        JsonNode contentText = candidates.get(0).path("content").path("parts").path(0).path("text");
 
-        if (content.isMissingNode() || content.isNull()) {
-            throw new IOException("[GlmClient] 'content' field missing in GLM response: " + rawResponse);
+        if (contentText.isMissingNode() || contentText.isNull()) {
+            throw new IOException("[GlmClient] 'candidates[0].content.parts[0].text' missing in Gemini response: " + rawResponse);
         }
 
-        log("INFO", "GLM call successful (HTTP " + statusCode + ").");
-        String text = content.asText().trim();
+        log("INFO", "Gemini call successful (HTTP " + statusCode + ").");
+        String text = contentText.asText().trim();
 
         if (text.startsWith("```")) {
             text = text.replaceAll("```json", "")
